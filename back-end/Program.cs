@@ -115,6 +115,7 @@ builder.Services.AddScoped<IRateUniversityRepository, RateUniversityRepository>(
 builder.Services.AddScoped<IRateUniversityService, RateUniversityService>();
 builder.Services.AddScoped<INewsRepository, NewsRepository>();
 builder.Services.AddScoped<INewsService, NewsService>();
+builder.Services.AddScoped<IPredictionService, PredictionService>();
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped(typeof(IGenericService<,>), typeof(GenericService<,>));
 

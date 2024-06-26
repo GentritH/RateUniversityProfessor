@@ -1,11 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.ML;
-using RateForProfessor.Entities;
-using RateForProfessor.Extensions;
-using RateForProfessor.ML.DataModels;
+﻿using RateForProfessor.Entities;
 using RateForProfessor.Models;
 using RateForProfessor.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 
 namespace RateForProfessor.Controllers
 {
@@ -15,34 +12,30 @@ namespace RateForProfessor.Controllers
     {
         private readonly IGenericService<RateUniversity, RateUniversityEntity> _service;
         private readonly IRateUniversityService _rateUniversityService;
-        private readonly PredictionEnginePool<SampleObservation, SamplePrediction> _predictionEnginePool;
+        private readonly IPredictionService _predictionService;
+
 
         public RateUniversityController
         (
-            IGenericService<RateUniversity, RateUniversityEntity> service, 
+            IGenericService<RateUniversity, RateUniversityEntity> service,
             IRateUniversityService rateUniversityService,
-            PredictionEnginePool<SampleObservation, SamplePrediction> predictionEnginePool
+            IPredictionService predictionService
         )
         {
             _service = service;
             _rateUniversityService = rateUniversityService;
-            _predictionEnginePool = predictionEnginePool;
+            _predictionService = predictionService;
         }
 
 
         [HttpPost("CreateRateUniversity")]
         public async Task<IActionResult> Create([FromBody] RateUniversity rateUniversityDto)
         {
-            SampleObservation sampleData = new SampleObservation() { SentimentText = rateUniversityDto.Feedback };
-            SamplePrediction prediction = _predictionEnginePool.Predict(sampleData);
+            var predictionResult = await _predictionService.PredictToxicityAsync(rateUniversityDto.Feedback);
 
-            bool isToxic = prediction.IsToxic;
-            float probability = CalculateMethods.CalculatePercentage(prediction.Score);
-            string retVal = $"Prediction: Is Toxic?: '{isToxic.ToString()}' with {probability.ToString()}% probability of toxicity  for the text '{rateUniversityDto.Feedback}'";
-
-            if (isToxic)
+            if (predictionResult.IsToxic)
             {
-                return Conflict(new { Status = "Toxic", Message = retVal });
+                return Conflict(new { Status = "Toxic", Message = predictionResult.Message });
             }
 
             var createdEntity = await _service.AddAsync(rateUniversityDto);
